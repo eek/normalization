@@ -199,7 +199,21 @@ class EnglishNumberNormalizer:
 
             if re.match(r"^\d+$", current):
                 if value is not None:
+                    # "44." + "5" → "44.5" (digit after spoken/decimal point)
+                    if isinstance(value, str) and value.endswith("."):
+                        value = str(value) + current
+                        continue
                     yield output(value)
+                    value = None
+                # "10 thousand" / "25 hundred" → 10000 / 2500, not bare digits
+                # then a leftover multiplier.
+                if next_lower in self.multipliers:
+                    value = int(current)
+                    continue
+                # "44 point 5" → keep 44 in value so "point" can append "."
+                if next_lower == "point":
+                    value = current
+                    continue
                 yield output(current)
                 continue
 
