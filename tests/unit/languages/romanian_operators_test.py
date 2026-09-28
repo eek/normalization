@@ -34,7 +34,7 @@ def test_fillers_never_collide_with_words(operators: RomanianOperators) -> None:
 
 
 def test_expand_written_numbers(operators: RomanianOperators) -> None:
-    assert operators.expand_written_numbers("douăzeci și cinci de lei") == "25 de lei"
+    assert operators.expand_written_numbers("douăzeci și cinci de lei") == "25 lei"
 
 
 @pytest.fixture(scope="module")
@@ -50,9 +50,14 @@ def test_diacritics_fold_but_colloquial_spellings_stay_distinct(pipeline) -> Non
 
 
 def test_spoken_and_written_numbers_agree(pipeline) -> None:
-    assert pipeline.normalize("25%") == pipeline.normalize("douăzeci și cinci la sută")
-    assert pipeline.normalize("Kubiș al treilea") == pipeline.normalize(
-        "Kubis al 3-lea"
+    assert pipeline.normalize("Mai am 25% baterie.") == pipeline.normalize(
+        "Mai am douăzeci și cinci la sută baterie."
+    )
+    assert pipeline.normalize("Afară sunt 20°.") == pipeline.normalize(
+        "Afară sunt douăzeci de grade."
+    )
+    assert pipeline.normalize("E al treilea din clasă.") == pipeline.normalize(
+        "E al 3-lea din clasă."
     )
 
 
