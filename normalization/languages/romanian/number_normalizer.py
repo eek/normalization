@@ -3,9 +3,11 @@
 ``text2num.alpha2digit`` does not support Romanian, so this module parses spelled-out
 cardinals for the patterns found in transcripts:
 
-- units, teens and tens, including the colloquial contracted teens (``cinșpe`` = 15,
-  ``șaișpe`` = 16) and tens (``douăj`` = 20);
-- ``X zeci și Y`` compounds (``douăzeci și cinci`` = 25);
+- units, teens and tens, including the informal contracted teens of everyday speech
+  (``cincișpe`` = 15, ``unșpe`` = 11, ``șaișpe`` = 16), their most reduced forms
+  (``cinșpe``) and colloquial tens (``douăj`` = 20);
+- ``X zeci și Y`` compounds (``douăzeci și cinci`` = 25), also written as one word
+  (``douăzecișicinci``);
 - hundreds (``trei sute``), and the multipliers ``mie``/``mii``, ``milion``/``milioane``,
   ``miliard``/``miliarde``, with the ``de`` Romanian puts between a number from 20 up and
   its multiplier (``douăzeci de mii`` = 20000);
@@ -16,7 +18,13 @@ cardinals for the patterns found in transcripts:
 
 A number phrase never runs across punctuation, and a unit directly after a unit starts a new
 number (``doi trei`` → ``2 3``). Words are matched with and without diacritics, and the
-legacy cedilla letters ş/ţ are read as ș/ț.
+legacy cedilla letters ş/ţ are rewritten as ș/ț.
+
+Romanian puts ``de`` between a number and its noun when the number is at least 20 or ends in
+00 (``douăzeci de grade``, ``o sută de lei``, but ``cinci grade``). Written forms such as
+``20°`` or ``20 grade`` have no ``de``, so that grammatical ``de`` is dropped after such
+numbers: ``20°``, ``20 de grade`` and ``douăzeci de grade`` all become ``20 grade``. A ``de``
+after other numbers, or in ``de la`` ("from": ``douăzeci de la bunica``), stays.
 """
 
 from __future__ import annotations
@@ -59,6 +67,8 @@ _TEENS: dict[str, int] = {
     "paișpe": 14,
     "paispe": 14,
     "cincisprezece": 15,
+    "cincișpe": 15,
+    "cincispe": 15,
     "cinșpe": 15,
     "cinspe": 15,
     "șaisprezece": 16,
@@ -143,6 +153,17 @@ _DIGIT_ORDINAL = re.compile(r"\b(\d+)-(?:lea|a)\b", re.IGNORECASE)
 _CEDILLA = str.maketrans("şţŞŢ", "șțȘȚ")
 
 
+def _alternation(words: dict[str, int]) -> str:
+    """Regex alternation of the words, longest first."""
+    ordered: list[str] = sorted(words.keys(), key=lambda word: -len(word))
+    return "|".join(ordered)
+
+
+_GLUED = re.compile(
+    rf"\b({_alternation(_TENS)})(și|si)({_alternation(_UNITS)})\b", re.IGNORECASE
+)
+
+
 def _fold(word: str) -> str:
     return word.translate(_CEDILLA).casefold()
 
@@ -151,6 +172,7 @@ class RomanianNumberNormalizer:
     """Replace spelled-out Romanian numbers with digits, keeping surrounding punctuation."""
 
     def __call__(self, text: str) -> str:
+        text = _GLUED.sub(r"\1 \2 \3", text.translate(_CEDILLA))
         text = _DIGIT_ORDINAL.sub(r"\1", text)
         tokens = _TOKEN.findall(text)
         if not tokens:
@@ -179,7 +201,25 @@ class RomanianNumberNormalizer:
             else:
                 output.append(tokens[i])
                 i += 1
-        return " ".join(output)
+        return " ".join(self._drop_linking_de(output))
+
+    @staticmethod
+    def _drop_linking_de(tokens: list[str]) -> list[str]:
+        """Drop the ``de`` that links a number of at least 20 (or ending in 00) to its noun."""
+        out: list[str] = []
+        for i, token in enumerate(tokens):
+            if (
+                token.casefold() == "de"
+                and 0 < i < len(tokens) - 1
+                and out
+                and out[-1].isdigit()
+                and (int(out[-1]) % 100 == 0 or int(out[-1]) % 100 >= 20)
+                and tokens[i + 1][:1].isalpha()
+                and tokens[i + 1].casefold() != "la"  # "de la" = "from"
+            ):
+                continue
+            out.append(token)
+        return out
 
     @staticmethod
     def _kind(word: str, following: str | None) -> tuple[str, int] | None:

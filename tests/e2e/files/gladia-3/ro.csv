@@ -1,29 +1,36 @@
 input,expected
-Douăzeci și cinci de lei,25 de lei
-Am plătit trei sute de lei.,am platit 300 de lei
-Costă 25%.,costa 25 la suta
-Costă douăzeci și cinci la sută.,costa 25 la suta
+Mai am douăzeci și cinci la sută baterie.,mai am 25 la suta baterie
+Mai am douăzecișicinci la sută baterie.,mai am 25 la suta baterie
+Mai am 25% baterie.,mai am 25 la suta baterie
+Acum e cu 25% mai scump.,acum e cu 25 la suta mai scump
+Am o reducere de 25%.,am o reducere de 25 la suta
+Afară sunt douăzeci de grade.,afara sunt 20 grade
+Afară sunt 20 de grade.,afara sunt 20 grade
+Afară sunt 20°.,afara sunt 20 grade
+Afară sunt 20°C.,afara sunt 20 grade celsius
+Afară sunt cinci grade.,afara sunt 5 grade
+Ajung în cincisprezece minute.,ajung in 15 minute
+Ajung în cincișpe minute.,ajung in 15 minute
+Laptopul costă o mie două sute de euro.,laptopul costa 1200 euro
+Laptopul costă 1.200 de euro.,laptopul costa 1200 euro
+Am plătit trei sute de lei.,am platit 300 lei
+Am plătit 300 de lei.,am platit 300 lei
+Casa costă un milion de lei.,casa costa 1000000 lei
+Casa costă 1.000.000 de lei.,casa costa 1000000 lei
+Am primit douăzeci de la bunica.,am primit 20 de la bunica
+Am slăbit trei virgulă cinci kilograme.,am slabit 3 virgula 5 kilograme
+"Am slăbit 3,5 kilograme.",am slabit 3 virgula 5 kilograme
+E al treilea din clasă.,e al 3 din clasa
+E al 3-lea din clasă.,e al 3 din clasa
+A doua zi am plecat.,a 2 zi am plecat
+A 2-a zi am plecat.,a 2 zi am plecat
+Ne vedem la ora opt și un sfert.,ne vedem la ora 8 si un sfert
+Au venit mii de oameni.,au venit mii de oameni
+Ştefan are şase ani.,stefan are 6 ani
 Știi că mâine e ziua lui?,stii ca maine e ziua lui
 "Acuma e acum, aicea nu e aici.",acuma e acum aicea nu e aici
 "Ăă, okay, mm, gata.",ok gata
 Îi spun ceva.,ii spun ceva
-Kubiș al treilea,kubis al 3
-Kubis al 3-lea,kubis al 3
-a doua zi,a 2 zi
-a 2-a zi,a 2 zi
-o mie două sute de euro,1200 de euro
-Costă €50,costa 50 euro
-Afară sunt 20°,afara sunt 20 grade
-trei virgulă cinci,3 virgula 5
-"3,5 kilograme",3 virgula 5 kilograme
-Ştefan are şase ani,stefan are 6 ani
-1.000.000 de lei,1000000 de lei
-un milion de lei,1000000 de lei
-cinșpe minute,15 minute
-O zi bună!,o zi buna
 Am un câine și o pisică.,am un caine si o pisica
-mii de oameni,mii de oameni
-ora opt și un sfert,ora 8 si un sfert
 2 < 5,2 mai mic decat 5
-Afară sunt 20°C,afara sunt 20 grade celsius
 Scrie-mi la ion@exemplu.ro,scrie mi la ion arond exemplu punct ro

@@ -19,13 +19,18 @@ def normalizer() -> RomanianNumberNormalizer:
         ("nouăsprezece", "19"),
         ("douăzeci", "20"),
         ("nouăzeci", "90"),
-        # Colloquial contracted forms
-        ("cinșpe", "15"),
+        # Standard and informal teens (everyday speech contracts them)
+        ("cincisprezece", "15"),
+        ("cincișpe", "15"),
+        ("cinșpe", "15"),  # the most reduced form
+        ("unșpe", "11"),
         ("șaișpe", "16"),
         ("douăj", "20"),
-        # Compounds with "și"
+        # Compounds with "și", also written as one word
         ("douăzeci și cinci", "25"),
         ("nouăzeci și nouă", "99"),
+        ("douăzecișicinci", "25"),
+        ("Douăzecişicinci", "25"),
         # Hundreds
         ("o sută", "100"),
         ("trei sute cincizeci și doi", "352"),
@@ -40,9 +45,18 @@ def normalizer() -> RomanianNumberNormalizer:
         ("douazeci si cinci", "25"),
         ("şase", "6"),
         ("şaptezeci", "70"),
-        # Numbers inside sentences keep their surroundings
-        ("douăzeci și cinci de lei", "25 de lei"),
-        ("am plătit trei sute de lei", "am plătit 300 de lei"),
+        # The "de" linking a number of 20+ (or ending in 00) to its noun is dropped,
+        # so spoken and written forms agree
+        ("douăzeci de grade", "20 grade"),
+        ("20 de grade", "20 grade"),
+        ("douăzeci și cinci de lei", "25 lei"),
+        ("am plătit trei sute de lei", "am plătit 300 lei"),
+        ("o sută de lei", "100 lei"),
+        ("douăzeci de mii de oameni", "20000 oameni"),
+        # ...but not after smaller numbers, nor in "de la" ("from")
+        ("cinci grade", "5 grade"),
+        ("doi de la tine", "2 de la tine"),
+        ("douăzeci de la bunica", "20 de la bunica"),
         # Punctuation and a unit after a unit start new numbers
         ("zece, unsprezece", "10, 11"),
         ("doi trei oameni", "2 3 oameni"),
