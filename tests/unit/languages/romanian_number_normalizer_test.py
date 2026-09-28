@@ -92,3 +92,22 @@ def test_articles_and_bare_words_stay_words(
 
 def test_empty_text(normalizer: RomanianNumberNormalizer) -> None:
     assert normalizer("") == ""
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("1200 €", "1200 euro"),
+        ("1200€", "1200 euro"),
+        ("€1200", "1200 euro"),
+        ("50 $", "50 dolari"),
+        ("o mie două sute de euro", "1200 euro"),
+    ],
+)
+def test_currency_symbols_read_as_romanian_speaks_them(
+    text: str, expected: str
+) -> None:
+    from normalization.languages.romanian.operators import ROMANIAN_CONFIG
+
+    normalizer = RomanianNumberNormalizer(ROMANIAN_CONFIG.currency_symbol_to_word)
+    assert normalizer(text) == expected

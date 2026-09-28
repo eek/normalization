@@ -75,7 +75,9 @@ ROMANIAN_CONFIG = LanguageConfig(
 class RomanianOperators(LanguageOperators):
     def __init__(self) -> None:
         super().__init__(ROMANIAN_CONFIG)
-        self._number_normalizer = RomanianNumberNormalizer()
+        self._number_normalizer = RomanianNumberNormalizer(
+            ROMANIAN_CONFIG.currency_symbol_to_word
+        )
 
     def expand_written_numbers(self, text: str) -> str:
         """Convert Romanian spelled-out numbers to digits (e.g. douăzeci și cinci → 25)."""
