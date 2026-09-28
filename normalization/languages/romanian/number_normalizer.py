@@ -16,6 +16,9 @@ cardinals for the patterns found in transcripts:
 - ordinals after ``al``/``a`` (``al treilea`` = ``al 3``) and digit ordinals (``al 3-lea``,
   ``a 3-a`` → ``al 3``, ``a 3``).
 
+Currency symbols before or after an amount become the currency word after it (``1.200 €``
+and ``€1.200`` → ``1200 euro``), as Romanian says it (``o mie două sute de euro``).
+
 A number phrase never runs across punctuation, and a unit directly after a unit starts a new
 number (``doi trei`` → ``2 3``). Words are matched with and without diacritics, and the
 legacy cedilla letters ş/ţ are rewritten as ș/ț.
@@ -151,6 +154,7 @@ _TOKEN = re.compile(r"(\S+)")
 _EDGE = re.compile(r"^([^\w]*)(.*?)([^\w]*)$", re.UNICODE)
 _DIGIT_ORDINAL = re.compile(r"\b(\d+)-(?:lea|a)\b", re.IGNORECASE)
 _CEDILLA = str.maketrans("şţŞŢ", "șțȘȚ")
+_AMOUNT = r"\d+(?:[.,]\d+)*"
 
 
 def _alternation(words: dict[str, int]) -> str:
@@ -171,7 +175,22 @@ def _fold(word: str) -> str:
 class RomanianNumberNormalizer:
     """Replace spelled-out Romanian numbers with digits, keeping surrounding punctuation."""
 
+    def __init__(self, currency_symbol_to_word: dict[str, str] | None = None) -> None:
+        self._currency: list[tuple[re.Pattern[str], re.Pattern[str], str]] = []
+        for symbol, word in (currency_symbol_to_word or {}).items():
+            sym = re.escape(symbol)
+            self._currency.append(
+                (
+                    re.compile(rf"{sym}\s*({_AMOUNT})"),
+                    re.compile(rf"({_AMOUNT})\s*{sym}"),
+                    word,
+                )
+            )
+
     def __call__(self, text: str) -> str:
+        for before, after, word in self._currency:
+            text = before.sub(rf"\1 {word}", text)
+            text = after.sub(rf"\1 {word}", text)
         text = _GLUED.sub(r"\1 \2 \3", text.translate(_CEDILLA))
         text = _DIGIT_ORDINAL.sub(r"\1", text)
         tokens = _TOKEN.findall(text)
