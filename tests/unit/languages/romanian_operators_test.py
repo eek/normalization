@@ -25,6 +25,11 @@ def test_config_code(operators: RomanianOperators) -> None:
 
 def test_word_replacements(operators: RomanianOperators) -> None:
     assert operators.get_word_replacements()["okay"] == "ok"
+    assert operators.get_word_replacements()["kile"] == "kg"
+
+
+def test_currency_codes_stay_words(operators: RomanianOperators) -> None:
+    assert operators.config.expand_all_caps_letter_by_letter is False
 
 
 def test_fillers_never_collide_with_words(operators: RomanianOperators) -> None:

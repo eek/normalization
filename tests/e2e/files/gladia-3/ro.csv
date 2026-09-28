@@ -22,13 +22,13 @@ Am plătit 300 de lei.,am platit 300 lei
 Casa costă un milion de lei.,casa costa 1000000 lei
 Casa costă 1.000.000 de lei.,casa costa 1000000 lei
 Am primit douăzeci de la bunica.,am primit 20 de la bunica
-Am slăbit trei virgulă cinci kilograme.,am slabit 3 virgula 5 kilograme
-"Am slăbit 3,5 kilograme.",am slabit 3 virgula 5 kilograme
+Am slăbit trei virgulă cinci kilograme.,am slabit 3 virgula 5 kg
+"Am slăbit 3,5 kilograme.",am slabit 3 virgula 5 kg
 E al treilea din clasă.,e al 3 din clasa
 E al 3-lea din clasă.,e al 3 din clasa
 A doua zi am plecat.,a 2 zi am plecat
 A 2-a zi am plecat.,a 2 zi am plecat
-Ne vedem la ora opt și un sfert.,ne vedem la ora 8 si un sfert
+Ne vedem la ora opt și un sfert.,ne vedem la ora 8:15
 Au venit mii de oameni.,au venit mii de oameni
 Ştefan are şase ani.,stefan are 6 ani
 Știi că mâine e ziua lui?,stii ca maine e ziua lui
@@ -38,3 +38,23 @@ Au venit mii de oameni.,au venit mii de oameni
 Am un câine și o pisică.,am un caine si o pisica
 2 < 5,2 mai mic decat 5
 Scrie-mi la ion@exemplu.ro,scrie mi la ion arond exemplu punct ro
+Ne vedem la ora opt și jumătate.,ne vedem la ora 8:30
+Ne vedem la opt jumate.,ne vedem la 8:30
+Ne vedem la ora 8:30.,ne vedem la ora 8:30
+Ne vedem la ora 8.30.,ne vedem la ora 8:30
+Vin la opt și-un sfert.,vin la 8:15
+Vin la opt fără un sfert.,vin la 7:45
+Vin la șapte patruzeci și cinci.,vin la 7:45
+Vin la 7:45.,vin la 7:45
+Plecăm la opt fără zece.,plecam la 7:50
+Am luat trei kile jumate.,am luat 3 virgula 5 kg
+Am luat trei kilograme și jumătate.,am luat 3 virgula 5 kg
+"Am luat 3,5 kg.",am luat 3 virgula 5 kg
+Am dormit opt ore și jumătate.,am dormit 8 virgula 5 ore
+Mai vreau jumătate de pâine.,mai vreau jumatate de paine
+Două virgulă trei.,2 virgula 3
+Am 50 RON.,am 50 ron
+E ora douășpe.,e ora 12
+Am doișpe lei.,am 12 lei
+Costă patrușcinci de lei.,costa 45 lei
+Nu-i bine.,nu i bine

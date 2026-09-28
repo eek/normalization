@@ -4,8 +4,9 @@
 cardinals for the patterns found in transcripts:
 
 - units, teens and tens, including the informal contracted teens of everyday speech
-  (``cincișpe`` = 15, ``unșpe`` = 11, ``șaișpe`` = 16), their most reduced forms
-  (``cinșpe``) and colloquial tens (``douăj`` = 20);
+  (``cincișpe`` = 15, ``unșpe`` = 11, ``doișpe``/``douășpe`` = 12), their most reduced
+  forms (``cinșpe``), colloquial tens (``douăj`` = 20) and fused tens-and-five
+  (``patrușcinci`` = 45);
 - ``X zeci și Y`` compounds (``douăzeci și cinci`` = 25), also written as one word
   (``douăzecișicinci``);
 - hundreds (``trei sute``), and the multipliers ``mie``/``mii``, ``milion``/``milioane``,
@@ -15,6 +16,10 @@ cardinals for the patterns found in transcripts:
   (``o zi``, ``un om``) stay words;
 - ordinals after ``al``/``a`` (``al treilea`` = ``al 3``) and digit ordinals (``al 3-lea``,
   ``a 3-a`` → ``al 3``, ``a 3``).
+
+A half after an amount is its decimal: ``trei kile jumate``, ``trei kilograme și jumătate``
+and ``trei și jumătate`` become ``3 virgula 5`` (with the unit after it), like ``3,5``. Clock
+times (``la opt și jumătate``) are read earlier, by the time normalizer.
 
 Currency symbols before or after an amount become the currency word after it (``1.200 €``
 and ``€1.200`` → ``1200 euro``), as Romanian says it (``o mie două sute de euro``).
@@ -63,6 +68,10 @@ _TEENS: dict[str, int] = {
     "douasprezece": 12,
     "doișpe": 12,
     "doispe": 12,
+    "douășpe": 12,  # feminine, as in "e ora douășpe"
+    "douaspe": 12,
+    "doușpe": 12,
+    "douspe": 12,
     "treisprezece": 13,
     "treișpe": 13,
     "treispe": 13,
@@ -111,6 +120,16 @@ _TENS: dict[str, int] = {
     "nouazeci": 90,
 }
 
+# Tens and "cinci" fused in fast speech (patrușcinci = patruzeci și cinci): complete numbers.
+_FUSED: dict[str, int] = {
+    "douășcinci": 25,
+    "douascinci": 25,
+    "treișcinci": 35,
+    "treiscinci": 35,
+    "patrușcinci": 45,
+    "patruscinci": 45,
+}
+
 _HUNDRED: dict[str, int] = {"sută": 100, "suta": 100, "sute": 100}
 
 _LARGE: dict[str, int] = {
@@ -147,7 +166,7 @@ _ORDINALS: dict[str, str] = {
     "zecea": "10",
 }
 
-NUMBER_WORDS: list[str] = [*_UNITS, *_TEENS, *_TENS, *_HUNDRED, *_LARGE]
+NUMBER_WORDS: list[str] = [*_UNITS, *_TEENS, *_FUSED, *_TENS, *_HUNDRED, *_LARGE]
 """Every cardinal word the normalizer understands (for ``LanguageConfig.number_words``)."""
 
 _TOKEN = re.compile(r"(\S+)")
@@ -155,6 +174,17 @@ _EDGE = re.compile(r"^([^\w]*)(.*?)([^\w]*)$", re.UNICODE)
 _DIGIT_ORDINAL = re.compile(r"\b(\d+)-(?:lea|a)\b", re.IGNORECASE)
 _CEDILLA = str.maketrans("şţŞŢ", "șțȘȚ")
 _AMOUNT = r"\d+(?:[.,]\d+)*"
+# "trei kile jumate", "trei kilograme și jumătate", "trei și jumătate" → "3 virgula 5 ...".
+# Not before "de": "jumătate de pâine" is half of something else.
+_HALVES = re.compile(
+    r"\b(\d+) (?:(?!(?:și|si)\b)([^\W\d_]+) )?(?:(?:și|si) )?(?:jumătate|jumatate|jumate)\b(?! de\b)",
+    re.IGNORECASE,
+)
+
+
+def _half(match: re.Match[str]) -> str:
+    unit = f" {match.group(2)}" if match.group(2) else ""
+    return f"{match.group(1)} virgula 5{unit}"
 
 
 def _alternation(words: dict[str, int]) -> str:
@@ -220,7 +250,11 @@ class RomanianNumberNormalizer:
             else:
                 output.append(tokens[i])
                 i += 1
-        return " ".join(self._drop_linking_de(output))
+        return _HALVES.sub(_half, " ".join(self._drop_linking_de(output)))
+
+    def parse(self, words: list[str]) -> tuple[int, int] | None:
+        """(value, words used) for the number phrase at the start of casefolded ``words``."""
+        return self._parse(words)
 
     @staticmethod
     def _drop_linking_de(tokens: list[str]) -> list[str]:
@@ -246,6 +280,8 @@ class RomanianNumberNormalizer:
             return "unit", _UNITS[word]
         if word in _TEENS:
             return "teen", _TEENS[word]
+        if word in _FUSED:
+            return "teen", _FUSED[word]
         if word in _TENS:
             return "ten", _TENS[word]
         if word in _HUNDRED:

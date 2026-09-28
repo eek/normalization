@@ -24,6 +24,10 @@ def normalizer() -> RomanianNumberNormalizer:
         ("cincișpe", "15"),
         ("cinșpe", "15"),  # the most reduced form
         ("unșpe", "11"),
+        ("doișpe", "12"),
+        ("douășpe", "12"),  # feminine: "e ora douășpe"
+        ("patrușcinci", "45"),  # fused "patruzeci și cinci"
+        ("patrușcinci de lei", "45 lei"),
         ("șaișpe", "16"),
         ("douăj", "20"),
         # Compounds with "și", also written as one word
@@ -110,4 +114,21 @@ def test_currency_symbols_read_as_romanian_speaks_them(
     from normalization.languages.romanian.operators import ROMANIAN_CONFIG
 
     normalizer = RomanianNumberNormalizer(ROMANIAN_CONFIG.currency_symbol_to_word)
+    assert normalizer(text) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("trei kile jumate", "3 virgula 5 kile"),
+        ("trei kilograme și jumătate", "3 virgula 5 kilograme"),
+        ("trei și jumătate", "3 virgula 5"),
+        ("opt ore și jumătate", "8 virgula 5 ore"),
+        ("jumătate de pâine", "jumătate de pâine"),
+        ("trei și jumătate de pâine", "3 și jumătate de pâine"),
+    ],
+)
+def test_halves_after_an_amount_become_decimals(
+    normalizer: RomanianNumberNormalizer, text: str, expected: str
+) -> None:
     assert normalizer(text) == expected
