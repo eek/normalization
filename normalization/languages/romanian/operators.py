@@ -4,6 +4,7 @@ from normalization.languages.romanian.number_normalizer import (
     NUMBER_WORDS,
     RomanianNumberNormalizer,
 )
+from normalization.languages.romanian.time_normalizer import RomanianTimeNormalizer
 
 _ROMANIAN_DIGIT_WORDS: dict[str, str] = {
     "zero": "0",
@@ -68,6 +69,8 @@ ROMANIAN_CONFIG = LanguageConfig(
     digit_words=_ROMANIAN_DIGIT_WORDS,
     number_words=NUMBER_WORDS,
     plus_word="plus",
+    # Currency codes and acronyms are read as words ("RON", "ANAF"), and "RON" is not "lei".
+    expand_all_caps_letter_by_letter=False,
 )
 
 
@@ -75,9 +78,19 @@ ROMANIAN_CONFIG = LanguageConfig(
 class RomanianOperators(LanguageOperators):
     def __init__(self) -> None:
         super().__init__(ROMANIAN_CONFIG)
+        self._time_normalizer = RomanianTimeNormalizer()
         self._number_normalizer = RomanianNumberNormalizer(
             ROMANIAN_CONFIG.currency_symbol_to_word
         )
+
+    def normalize_numeric_time_formats(self, text: str) -> str:
+        """Spoken and dotted clock times to H:MM (e.g. la opt și un sfert → la 8:15).
+
+        Romanian says times with words ("opt și jumătate", "opt fără un sfert"); they are
+        converted here, before the time-colon protection, so they end up exactly like a
+        written "8:30".
+        """
+        return self._time_normalizer(text)
 
     def expand_written_numbers(self, text: str) -> str:
         """Convert Romanian spelled-out numbers to digits (e.g. douăzeci și cinci → 25)."""
