@@ -5,9 +5,4 @@ ENGLISH_SENTENCE_REPLACEMENTS: dict[str, str] = {
     "all right": "alright",
     "fire fire": "firefires",
     "paul s": "pauls",
-    "30 two": "32",
-    "for point": "point",
-    "eleventh 2000 and twelve": "112012",
-    "eleventh 2 thousand and twelve": "112012",
-    "eleventh 2 thousaond and twelve": "112012",
 }
