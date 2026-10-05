@@ -200,8 +200,12 @@ class EnglishNumberNormalizer:
             next_next_lower = next_next.lower() if next_next is not None else None
 
             # ASR homophone: "40 for point 5" → "40 four point 5" → 44.5
-            if current_lower == "for" and next_lower == "point" and (
-                value is not None or (prev is not None and re.match(r"^\d+$", prev))
+            if (
+                current_lower == "for"
+                and next_lower == "point"
+                and (
+                    value is not None or (prev is not None and re.match(r"^\d+$", prev))
+                )
             ):
                 current = "four"
                 current_lower = "four"
