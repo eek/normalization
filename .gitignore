@@ -18,3 +18,4 @@ wheels/
 .idea/
 .cursor/
 .claude/
+/site
