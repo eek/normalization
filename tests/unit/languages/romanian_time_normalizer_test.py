@@ -36,6 +36,9 @@ def normalizer() -> RomanianTimeNormalizer:
         ("după opt fără un sfert", "după 7:45"),
         # After "ora" any minutes follow "și", not only round ones
         ("la ora opt și cincisprezece", "la ora 8:15"),
+        # A range of times is not a change of value; an arrival is a time
+        ("ne vedem de la opt la nouă și jumătate", "ne vedem de la opt la 9:30"),
+        ("a ajuns la opt și jumătate", "a ajuns la 8:30"),
     ],
 )
 def test_spoken_times_become_clock_times(
@@ -65,6 +68,10 @@ def test_spoken_times_become_clock_times(
         "a ajuns la 8.30 lei",  # a dotted amount
         "până la 15.03.2024",  # a dotted date
         "la opt și cincisprezece oameni",  # after "la", only round minutes follow "și"
+        # After a verb of change, the new value, its unit often left out
+        "inflația a crescut la trei și jumătate",
+        "rata a scăzut de la patru la trei și jumătate",
+        "prețul a urcat până la doi și un sfert",
     ],
 )
 def test_other_phrases_are_left_alone(

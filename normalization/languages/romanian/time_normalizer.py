@@ -15,8 +15,9 @@ zece``, ``opt și zece``) only after ``la``/``ora``, and after ``și`` only roun
 such as ``trei și jumătate`` are left to the number normalizer (``3,5``). A phrase followed by
 an amount is a quantity too, whatever its cue: ``la trei și jumătate la sută`` (3,5 %), ``e
 doi și un sfert la sută``, ``la doi și jumătate milioane``, ``la zece douăzeci de lei``, ``de
-la trei și jumătate la cinci la sută``, ``la 8.30 lei``. A dotted date (``până la
-15.03.2024``) is not a time. Whether ``opt și jumătate`` means 8:30 or 20:30 cannot be told
+la trei și jumătate la cinci la sută``, ``la 8.30 lei``, and so is one after a verb of
+change, where news leaves the unit out (``inflația a crescut la trei și jumătate``, ``a scăzut
+de la patru la trei și jumătate``). A dotted date (``până la 15.03.2024``) is not a time. Whether ``opt și jumătate`` means 8:30 or 20:30 cannot be told
 from the words; it becomes 8:30.
 """
 
@@ -69,6 +70,31 @@ _AMOUNT_AFTER = {
     "grade",
 }
 _PERCENT = {"sută", "suta"}
+# After these a "la" phrase is the new value of something, not a time: "a crescut la trei și
+# jumătate" (3,5). Not "ajuns": "a ajuns la opt și jumătate" is an arrival.
+_CHANGE = {
+    "crescut",
+    "crește",
+    "creste",
+    "scăzut",
+    "scazut",
+    "scade",
+    "urcat",
+    "urcă",
+    "urca",
+    "coborât",
+    "coborat",
+    "coboară",
+    "coboara",
+    "redus",
+    "majorat",
+    "mărit",
+    "marit",
+    "diminuat",
+    "avansat",
+}
+# Words skipped when looking back from a "la" for that verb: "a scăzut de la patru la".
+_BETWEEN = {"de", "la", "până", "pana"}
 _SYMBOLS = ("%", "€", "$", "£", "°")
 
 _TOKEN = re.compile(r"(\S+)")
@@ -97,7 +123,12 @@ class RomanianTimeNormalizer:
         i = 0
         while i < len(tokens):
             output.append(tokens[i])
-            if words[i] in _CUES and not parts[i][2] and i + 1 < len(tokens):
+            if (
+                words[i] in _CUES
+                and not parts[i][2]
+                and i + 1 < len(tokens)
+                and not self._after_change(words, parts, i)
+            ):
                 end = i + 1
                 while (
                     end < len(tokens)
@@ -113,6 +144,26 @@ class RomanianTimeNormalizer:
                     continue
             i += 1
         return " ".join(output)
+
+    def _after_change(
+        self, words: list[str], parts: Sequence[tuple[str, ...]], cue: int
+    ) -> bool:
+        """Whether the ``la`` at ``cue`` follows a verb of change, over ``de``/``la``/``până``
+        and the numbers of a range ("a scăzut de la patru la trei și jumătate")."""
+        if words[cue] != "la":
+            return False
+        k = cue - 1
+        while (
+            k >= 0
+            and not parts[k][2]
+            and (
+                words[k] in _BETWEEN
+                or words[k].isdigit()
+                or self._numbers.parse([words[k]])
+            )
+        ):
+            k -= 1
+        return k >= 0 and not parts[k][2] and words[k] in _CHANGE
 
     def _dotted(self, match: re.Match[str]) -> str:
         if int(match.group(2)) > 24:
