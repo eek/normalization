@@ -18,11 +18,14 @@ cardinals for the patterns found in transcripts:
   ``a 3-a`` → ``al 3``, ``a 3``).
 
 A half after an amount is its decimal: ``trei kile jumate``, ``trei kilograme și jumătate``
-and ``trei și jumătate`` become ``3 virgula 5`` (with the unit after it), like ``3,5``. Clock
-times (``la opt și jumătate``) are read earlier, by the time normalizer.
+and ``trei și jumătate`` become ``3 virgula 5`` (with the unit after it), like ``3,5``; a
+quarter likewise (``doi și un sfert la sută``, ``două ore și un sfert`` → ``2 virgula 25``,
+like ``2,25``). Clock times (``la opt și jumătate``) are read earlier, by the time normalizer.
 
 Currency symbols before or after an amount become the currency word after it (``1.200 €``
-and ``€1.200`` → ``1200 euro``), as Romanian says it (``o mie două sute de euro``).
+and ``€1.200`` → ``1200 euro``), as Romanian says it (``o mie două sute de euro``). A symbol
+after an amount is read first, since that is where Romanian writes it, so in ``5 € 2
+kilograme`` the symbol stays with the 5.
 
 A number phrase never runs across punctuation, and a unit directly after a unit starts a new
 number (``doi trei`` → ``2 3``). Words are matched with and without diacritics, and the
@@ -182,9 +185,22 @@ _HALVES = re.compile(
 )
 
 
+# "doi și un sfert", "două ore și un sfert", "doi și-un sfert" → "2 virgula 25 ...".
+# Not before "de": "un sfert de oră" is a quarter of something else.
+_QUARTERS = re.compile(
+    r"\b(\d+) (?:(?!(?:și|si)\b)([^\W\d_]+) )?(?:(?:și|si) (?:un )?|(?:și|si)-un )sfert\b(?! de\b)",
+    re.IGNORECASE,
+)
+
+
 def _half(match: re.Match[str]) -> str:
     unit = f" {match.group(2)}" if match.group(2) else ""
     return f"{match.group(1)} virgula 5{unit}"
+
+
+def _quarter(match: re.Match[str]) -> str:
+    unit = f" {match.group(2)}" if match.group(2) else ""
+    return f"{match.group(1)} virgula 25{unit}"
 
 
 def _alternation(words: dict[str, int]) -> str:
@@ -219,8 +235,8 @@ class RomanianNumberNormalizer:
 
     def __call__(self, text: str) -> str:
         for before, after, word in self._currency:
-            text = before.sub(rf"\1 {word}", text)
             text = after.sub(rf"\1 {word}", text)
+            text = before.sub(rf"\1 {word}", text)
         text = _GLUED.sub(r"\1 \2 \3", text.translate(_CEDILLA))
         text = _DIGIT_ORDINAL.sub(r"\1", text)
         tokens = _TOKEN.findall(text)
@@ -250,7 +266,8 @@ class RomanianNumberNormalizer:
             else:
                 output.append(tokens[i])
                 i += 1
-        return _HALVES.sub(_half, " ".join(self._drop_linking_de(output)))
+        text = " ".join(self._drop_linking_de(output))
+        return _QUARTERS.sub(_quarter, _HALVES.sub(_half, text))
 
     def parse(self, words: list[str]) -> tuple[int, int] | None:
         """(value, words used) for the number phrase at the start of casefolded ``words``."""

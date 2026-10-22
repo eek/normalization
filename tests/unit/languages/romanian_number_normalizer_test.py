@@ -106,6 +106,9 @@ def test_empty_text(normalizer: RomanianNumberNormalizer) -> None:
         ("€1200", "1200 euro"),
         ("50 $", "50 dolari"),
         ("o mie două sute de euro", "1200 euro"),
+        # A symbol after an amount stays with it, not with the next number
+        ("5 € 2 kilograme", "5 euro 2 kilograme"),
+        ("5€ 2 kilograme", "5 euro 2 kilograme"),
     ],
 )
 def test_currency_symbols_read_as_romanian_speaks_them(
@@ -129,6 +132,23 @@ def test_currency_symbols_read_as_romanian_speaks_them(
     ],
 )
 def test_halves_after_an_amount_become_decimals(
+    normalizer: RomanianNumberNormalizer, text: str, expected: str
+) -> None:
+    assert normalizer(text) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("doi și un sfert", "2 virgula 25"),
+        ("doi și-un sfert", "2 virgula 25"),
+        ("două ore și un sfert", "2 virgula 25 ore"),
+        ("doi și un sfert la sută", "2 virgula 25 la sută"),
+        ("un sfert de oră", "un sfert de oră"),
+        ("trei și un sfert de pâine", "3 și un sfert de pâine"),
+    ],
+)
+def test_quarters_after_an_amount_become_decimals(
     normalizer: RomanianNumberNormalizer, text: str, expected: str
 ) -> None:
     assert normalizer(text) == expected

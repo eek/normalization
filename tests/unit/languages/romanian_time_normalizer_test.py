@@ -48,6 +48,13 @@ def test_spoken_times_become_clock_times(
         "la ion acasă",
         "am plătit la trei oameni",
         "costă 8.30 lei",  # a dotted number without a time cue
+        # An amount word after the phrase makes it a quantity, whatever the cue
+        "a crescut la trei și jumătate la sută",
+        "e doi și un sfert la sută",
+        "a urcat la doi și jumătate milioane",
+        "au crescut la trei și jumătate mii de lei",
+        "e trei și jumătate lei",
+        "e trei și jumătate %",
     ],
 )
 def test_other_phrases_are_left_alone(

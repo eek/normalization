@@ -11,13 +11,17 @@ Romanian says times with words, usually after ``la``, ``ora`` or ``e``:
 This runs before the time-colon protection, so the result is kept exactly like a written
 ``8:30``. Only phrases right after ``la``/``ora``/``e`` are read as times, and plain minute
 numbers (``opt zece``, ``opt și zece``) only after ``la``/``ora``, so quantities such as
-``trei și jumătate`` are left to the number normalizer (``3,5``). Whether ``opt și
-jumătate`` means 8:30 or 20:30 cannot be told from the words; it becomes 8:30.
+``trei și jumătate`` are left to the number normalizer (``3,5``). A phrase followed by an
+amount word is a quantity too, whatever its cue: ``la trei și jumătate la sută`` (3,5 %),
+``e doi și un sfert la sută``, ``la doi și jumătate milioane``, ``e trei și jumătate lei``.
+Whether ``opt și jumătate`` means 8:30 or 20:30 cannot be told from the words; it becomes
+8:30.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 
 from normalization.languages.romanian.number_normalizer import RomanianNumberNormalizer
 
@@ -29,11 +33,62 @@ _HALF = {"jumătate", "jumatate", "jumate"}
 _QUARTER = "sfert"
 _AND_A = {"și-un", "si-un"}
 _ROUND_MINUTES = {5, 10, 20, 25}
+# Words after which a time-like phrase is an amount ("la trei și jumătate la sută" is 3,5 %).
+_AMOUNT_AFTER = {
+    "procent",
+    "procente",
+    "mie",
+    "mii",
+    "milion",
+    "milioane",
+    "miliard",
+    "miliarde",
+    "leu",
+    "lei",
+    "bani",
+    "ron",
+    "euro",
+    "dolar",
+    "dolari",
+    "lire",
+    "kg",
+    "kil",
+    "kile",
+    "kilogram",
+    "kilograme",
+    "km",
+    "kilometru",
+    "kilometri",
+    "metru",
+    "metri",
+    "litru",
+    "litri",
+    "grad",
+    "grade",
+}
+_PERCENT = {"sută", "suta"}
 
 _TOKEN = re.compile(r"(\S+)")
 _EDGE = re.compile(r"^([^\w]*)(.*?)([^\w-]*)$", re.UNICODE)
 _DOTTED = re.compile(r"\b(la|ora)\s+(\d{1,2})\.([0-5]\d)\b", re.IGNORECASE)
 _CEDILLA = str.maketrans("şţŞŢ", "șțȘȚ")
+
+
+def _amount_follows(
+    words: list[str], parts: Sequence[tuple[str, ...]], last: int
+) -> bool:
+    """Whether what follows the phrase ending at token ``last`` makes it an amount."""
+    if "%" in parts[last][2]:
+        return True
+    if parts[last][2] or last + 1 >= len(words):
+        return False  # punctuation ends the phrase
+    lead = parts[last + 1][0]
+    if lead:
+        return lead.startswith("%")  # "trei și jumătate %"
+    following = words[last + 1]
+    if following in _AMOUNT_AFTER:
+        return True
+    return following == "la" and last + 2 < len(words) and words[last + 2] in _PERCENT
 
 
 class RomanianTimeNormalizer:
@@ -65,7 +120,7 @@ class RomanianTimeNormalizer:
                 ):
                     end += 1
                 found = self._time(words[i + 1 : end], words[i] in _MINUTE_CUES)
-                if found:
+                if found and not _amount_follows(words, parts, i + found[2]):
                     hour, minute, used = found
                     output.append(f"{hour}:{minute:02d}{parts[i + used][2]}")
                     i += used + 1
