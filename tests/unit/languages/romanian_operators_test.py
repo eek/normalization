@@ -69,3 +69,11 @@ def test_spoken_and_written_numbers_agree(pipeline) -> None:
 def test_fillers_are_removed_but_words_that_look_like_fillers_stay(pipeline) -> None:
     assert pipeline.normalize("Ăă, okay, mm, gata.") == "ok gata"
     assert pipeline.normalize("Îi spun ceva.") == "ii spun ceva"
+
+
+def test_roman_numerals_only_in_capitals(pipeline) -> None:
+    assert pipeline.normalize("Capitolul VII.") == "capitolul 7"
+    # "vii" (you come), "vi" (to you) and "ii" without diacritics are words
+    assert pipeline.normalize("De ce nu vii?") == "de ce nu vii"
+    assert pipeline.normalize("Vi se pare?") == "vi se pare"
+    assert pipeline.normalize("Ii spun ceva.") == "ii spun ceva"

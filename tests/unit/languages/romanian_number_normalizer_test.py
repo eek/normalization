@@ -69,6 +69,17 @@ def normalizer() -> RomanianNumberNormalizer:
         ("a patra", "a 4"),
         ("al 3-lea", "al 3"),
         ("a 3-a", "a 3"),
+        ("a opta", "a 8"),
+        ("al unsprezecelea", "al 11"),
+        ("a unsprezecea", "a 11"),
+        ("al douăzecilea", "al 20"),
+        ("a douăzecea", "a 20"),
+        ("al douăzeci și cincilea", "al 25"),
+        # "întâi" before a month is its first day
+        ("pe întâi decembrie", "pe 1 decembrie"),
+        # The "de" of a discourse marker or a preposition after a number stays
+        ("în 2024 de exemplu", "în 2024 de exemplu"),
+        ("douăzeci de pe listă", "20 de pe listă"),
     ],
 )
 def test_spelled_numbers_become_digits(
@@ -109,6 +120,9 @@ def test_empty_text(normalizer: RomanianNumberNormalizer) -> None:
         # A symbol after an amount stays with it, not with the next number
         ("5 € 2 kilograme", "5 euro 2 kilograme"),
         ("5€ 2 kilograme", "5 euro 2 kilograme"),
+        ("cinci € 2 kilograme", "5 euro 2 kilograme"),  # spelled numbers first
+        ("€50 €100", "50 euro 100 euro"),  # each symbol keeps its own amount
+        ("20 de €", "20 euro"),  # like "20 de euro"
     ],
 )
 def test_currency_symbols_read_as_romanian_speaks_them(
@@ -129,6 +143,18 @@ def test_currency_symbols_read_as_romanian_speaks_them(
         ("opt ore și jumătate", "8 virgula 5 ore"),
         ("jumătate de pâine", "jumătate de pâine"),
         ("trei și jumătate de pâine", "3 și jumătate de pâine"),
+        # With a noun, a "de" after the half is the noun's: 3,5 kg of apples
+        ("trei kilograme și jumătate de mere", "3 virgula 5 kilograme de mere"),
+        # "un"/"o" are 1 before a measure, whose decimal takes the plural (1,5 ore)
+        ("o oră și jumătate", "1 virgula 5 ore"),
+        ("un an și jumătate", "1 virgula 5 ani"),
+        ("un kil jumate", "1 virgula 5 kil"),
+        ("o casă și jumătate", "o casă și jumătate"),
+        # Without "și", only after a measure
+        ("cei doi vor jumătate", "cei 2 vor jumătate"),
+        # After a multiplier, a decimal of it, as written
+        ("două milioane și jumătate", "2 virgula 5 milioane"),
+        ("trei mii și jumătate de lei", "3 virgula 5 mii de lei"),
     ],
 )
 def test_halves_after_an_amount_become_decimals(
@@ -146,6 +172,8 @@ def test_halves_after_an_amount_become_decimals(
         ("doi și un sfert la sută", "2 virgula 25 la sută"),
         ("un sfert de oră", "un sfert de oră"),
         ("trei și un sfert de pâine", "3 și un sfert de pâine"),
+        ("o oră și un sfert", "1 virgula 25 ore"),
+        ("un milion și un sfert", "1 virgula 25 milioane"),
     ],
 )
 def test_quarters_after_an_amount_become_decimals(

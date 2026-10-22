@@ -71,6 +71,9 @@ ROMANIAN_CONFIG = LanguageConfig(
     plus_word="plus",
     # Currency codes and acronyms are read as words ("RON", "ANAF"), and "RON" is not "lei".
     expand_all_caps_letter_by_letter=False,
+    # Roman numerals only in capitals ("Capitolul VII"): "vii" (you come), "vi" ("vi se
+    # pare") and "ii" written without diacritics are everyday words.
+    roman_numerals_uppercase_only=True,
 )
 
 
@@ -80,7 +83,8 @@ class RomanianOperators(LanguageOperators):
         super().__init__(ROMANIAN_CONFIG)
         self._time_normalizer = RomanianTimeNormalizer()
         self._number_normalizer = RomanianNumberNormalizer(
-            ROMANIAN_CONFIG.currency_symbol_to_word
+            ROMANIAN_CONFIG.currency_symbol_to_word,
+            ROMANIAN_CONFIG.decimal_word or "virgula",
         )
 
     def normalize_numeric_time_formats(self, text: str) -> str:

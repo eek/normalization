@@ -14,18 +14,23 @@ cardinals for the patterns found in transcripts:
   its multiplier (``douăzeci de mii`` = 20000);
 - ``un``/``o`` count as 1 only before ``sută``/``mie``/``milion``/``miliard``, so articles
   (``o zi``, ``un om``) stay words;
-- ordinals after ``al``/``a`` (``al treilea`` = ``al 3``) and digit ordinals (``al 3-lea``,
-  ``a 3-a`` → ``al 3``, ``a 3``).
+- ordinals after ``al``/``a`` (``al treilea`` = ``al 3``, ``a opta``, ``al douăzeci și
+  cincilea``) and digit ordinals (``al 3-lea``, ``a 3-a`` → ``al 3``, ``a 3``), and ``întâi``
+  before a month (``întâi decembrie`` = ``1 decembrie``).
 
-A half after an amount is its decimal: ``trei kile jumate``, ``trei kilograme și jumătate``
-and ``trei și jumătate`` become ``3 virgula 5`` (with the unit after it), like ``3,5``; a
-quarter likewise (``doi și un sfert la sută``, ``două ore și un sfert`` → ``2 virgula 25``,
-like ``2,25``). Clock times (``la opt și jumătate``) are read earlier, by the time normalizer.
+A half after an amount is its decimal: ``trei kile jumate``, ``trei kilograme și jumătate
+(de mere)`` and ``trei și jumătate`` become ``3 virgula 5`` (with the noun after it), like
+``3,5``; a quarter likewise (``doi și un sfert la sută``, ``două ore și un sfert`` → ``2
+virgula 25``, like ``2,25``). ``un``/``o`` count as 1 before a measure, whose decimal takes the
+plural as written (``o oră și jumătate`` = ``1,5 ore``), and a half after a multiplier is a
+decimal of it (``două milioane și jumătate`` = ``2,5 milioane``). Clock times (``la opt și
+jumătate``) are read earlier, by the time normalizer.
 
 Currency symbols before or after an amount become the currency word after it (``1.200 €``
-and ``€1.200`` → ``1200 euro``), as Romanian says it (``o mie două sute de euro``). A symbol
-after an amount is read first, since that is where Romanian writes it, so in ``5 € 2
-kilograme`` the symbol stays with the 5.
+and ``€1.200`` → ``1200 euro``), as Romanian says it (``o mie două sute de euro``), once the
+spelled numbers are digits. A symbol after an amount is read first, since that is where
+Romanian writes it (``5 € 2 kilograme`` and ``cinci € 2 kilograme`` → ``5 euro 2``), but not
+one that already has its amount after it (``€50 €100``); ``20 de €`` is ``20 euro``.
 
 A number phrase never runs across punctuation, and a unit directly after a unit starts a new
 number (``doi trei`` → ``2 3``). Words are matched with and without diacritics, and the
@@ -35,12 +40,15 @@ Romanian puts ``de`` between a number and its noun when the number is at least 2
 00 (``douăzeci de grade``, ``o sută de lei``, but ``cinci grade``). Written forms such as
 ``20°`` or ``20 grade`` have no ``de``, so that grammatical ``de`` is dropped after such
 numbers: ``20°``, ``20 de grade`` and ``douăzeci de grade`` all become ``20 grade``. A ``de``
-after other numbers, or in ``de la`` ("from": ``douăzeci de la bunica``), stays.
+after other numbers, or starting a preposition or a discourse marker (``de la`` "from",
+``douăzeci de pe listă``, ``în 2024 de exemplu``), stays.
 """
 
 from __future__ import annotations
 
 import re
+
+from normalization.constants import ProtectPlaceholder
 
 _UNITS: dict[str, int] = {
     "zero": 0,
@@ -176,31 +184,58 @@ _TOKEN = re.compile(r"(\S+)")
 _EDGE = re.compile(r"^([^\w]*)(.*?)([^\w]*)$", re.UNICODE)
 _DIGIT_ORDINAL = re.compile(r"\b(\d+)-(?:lea|a)\b", re.IGNORECASE)
 _CEDILLA = str.maketrans("şţŞŢ", "șțȘȚ")
-_AMOUNT = r"\d+(?:[.,]\d+)*"
-# "trei kile jumate", "trei kilograme și jumătate", "trei și jumătate" → "3 virgula 5 ...".
-# Not before "de": "jumătate de pâine" is half of something else.
+# Decimals are protected (12,50 → 12XDECIMALX50) before this runs.
+_AMOUNT = rf"\d+(?:(?:[.,]|{ProtectPlaceholder.DECIMAL_SEPARATOR.value})\d+)*"
+_AND = r"(?:și|si)"
+_HALF = r"(?:jumătate|jumatate|jumate)"
+_QUARTER = rf"(?:{_AND} (?:un )?|{_AND}-un )sfert"
+# Nouns a colloquial half follows without "și" ("trei kile jumate", "un an jumate"), and the
+# only nouns before which "un"/"o" count as 1 in a half or quarter ("o oră și jumătate").
+_MEASURES = {
+    "kil", "kile", "kilogram", "kilograme", "kg", "gram", "grame", "litru", "litri",
+    "metru", "metri", "km", "kilometru", "kilometri", "oră", "ora", "ore", "minut", "minute",
+    "zi", "zile", "săptămână", "saptamana", "săptămâni", "saptamani", "lună", "luna", "luni",
+    "an", "ani", "leu", "lei", "euro", "dolar", "dolari",
+}  # fmt: skip
+# Romanian puts a decimal amount's noun in the plural ("1,5 ore", "1,5 kilograme").
+_PLURAL_MEASURES = {
+    "oră": "ore", "ora": "ore", "kilogram": "kilograme", "gram": "grame", "litru": "litri",
+    "metru": "metri", "kilometru": "kilometri", "minut": "minute", "zi": "zile",
+    "săptămână": "săptămâni", "saptamana": "saptamani", "lună": "luni", "luna": "luni",
+    "an": "ani", "leu": "lei", "dolar": "dolari",
+}  # fmt: skip
+_MEASURE = "|".join(sorted((re.escape(m) for m in _MEASURES), key=lambda m: -len(m)))
+# A half or quarter after an amount, or after an amount and its noun: "trei și jumătate", "opt
+# ore și jumătate", "trei kilograme și jumătate de mere", "o oră și un sfert". The trailing
+# "de" is captured: without a noun, "trei și jumătate de pâine" is not 3,5.
 _HALVES = re.compile(
-    r"\b(\d+) (?:(?!(?:și|si)\b)([^\W\d_]+) )?(?:(?:și|si) )?(?:jumătate|jumatate|jumate)\b(?! de\b)",
+    rf"\b(\d+|un|o) (?:(?!{_AND}\b)([^\W\d_]+) )?{_AND} {_HALF}\b( de\b)?",
     re.IGNORECASE,
 )
-
-
-# "doi și un sfert", "două ore și un sfert", "doi și-un sfert" → "2 virgula 25 ...".
-# Not before "de": "un sfert de oră" is a quarter of something else.
 _QUARTERS = re.compile(
-    r"\b(\d+) (?:(?!(?:și|si)\b)([^\W\d_]+) )?(?:(?:și|si) (?:un )?|(?:și|si)-un )sfert\b(?! de\b)",
-    re.IGNORECASE,
+    rf"\b(\d+|un|o) (?:(?!{_AND}\b)([^\W\d_]+) )?{_QUARTER}\b( de\b)?", re.IGNORECASE
 )
-
-
-def _half(match: re.Match[str]) -> str:
-    unit = f" {match.group(2)}" if match.group(2) else ""
-    return f"{match.group(1)} virgula 5{unit}"
-
-
-def _quarter(match: re.Match[str]) -> str:
-    unit = f" {match.group(2)}" if match.group(2) else ""
-    return f"{match.group(1)} virgula 25{unit}"
+_COLLOQUIAL_HALVES = re.compile(rf"\b(\d+|un|o) ({_MEASURE}) {_HALF}\b", re.IGNORECASE)
+# A half or quarter after a multiplier is a decimal of it, as written: "două milioane și
+# jumătate" is "2,5 milioane", not 2000000,5.
+_PLURAL_MULTIPLIER = {
+    "mie": "mii",
+    "mii": "mii",
+    "milion": "milioane",
+    "milioane": "milioane",
+    "miliard": "miliarde",
+    "miliarde": "miliarde",
+}
+_MONTHS = {
+    "ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august",
+    "septembrie", "octombrie", "noiembrie", "decembrie",
+}  # fmt: skip
+# A "de" before these is not the one linking a number to its noun: "în 2024 de exemplu",
+# "douăzeci de pe listă", "de la" ("from").
+_NOT_LINKING = {
+    "la", "pe", "sub", "către", "catre", "lângă", "langa", "după", "dupa", "exemplu",
+    "fapt", "asemenea", "obicei", "ce", "când", "cand",
+}  # fmt: skip
 
 
 def _alternation(words: dict[str, int]) -> str:
@@ -218,25 +253,45 @@ def _fold(word: str) -> str:
     return word.translate(_CEDILLA).casefold()
 
 
+def _ordinal_stems(word: str) -> list[str]:
+    """Cardinal forms an ordinal word may be built on: unsprezecelea, douăzecea, cincea."""
+    stems = []
+    if word.endswith("ulea"):
+        stems.append(word[:-4])  # optulea
+    if word.endswith("lea"):
+        stems.append(word[:-3])  # unsprezecelea, douăzecilea, nouălea
+    if word.endswith("ea"):
+        stems += [word[:-2] + "e", word[:-2] + "i"]  # unsprezecea, douăzecea, cincea
+    if word.endswith("a"):
+        stems.append(word[:-1])  # opta
+    return stems
+
+
 class RomanianNumberNormalizer:
     """Replace spelled-out Romanian numbers with digits, keeping surrounding punctuation."""
 
-    def __init__(self, currency_symbol_to_word: dict[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        currency_symbol_to_word: dict[str, str] | None = None,
+        decimal_word: str = "virgula",
+    ) -> None:
+        self._decimal = decimal_word
         self._currency: list[tuple[re.Pattern[str], re.Pattern[str], str]] = []
         for symbol, word in (currency_symbol_to_word or {}).items():
             sym = re.escape(symbol)
             self._currency.append(
                 (
                     re.compile(rf"{sym}\s*({_AMOUNT})"),
-                    re.compile(rf"({_AMOUNT})\s*{sym}"),
+                    # Not an amount that has the symbol before it ("€50 €100"), nor the
+                    # tail of a longer number; "20 de €" is "20 euro", like "20 de euro".
+                    re.compile(
+                        rf"(?<![\d.,])(?<!{sym})(?<!{sym} )({_AMOUNT})\s*(?:de\s+)?{sym}"
+                    ),
                     word,
                 )
             )
 
     def __call__(self, text: str) -> str:
-        for before, after, word in self._currency:
-            text = after.sub(rf"\1 {word}", text)
-            text = before.sub(rf"\1 {word}", text)
         text = _GLUED.sub(r"\1 \2 \3", text.translate(_CEDILLA))
         text = _DIGIT_ORDINAL.sub(r"\1", text)
         tokens = _TOKEN.findall(text)
@@ -248,26 +303,103 @@ class RomanianNumberNormalizer:
         i = 0
         while i < len(tokens):
             lead, _, trail = parts[i]
-            if cores[i] in _ORDINALS and i > 0 and cores[i - 1] in ("al", "a"):
-                output.append(f"{lead}{_ORDINALS[cores[i]]}{trail}")
-                i += 1
-                continue
             # A number phrase may not run across punctuation between its words.
             limit = i + 1
             while (
                 limit < len(tokens) and not parts[limit - 1][2] and not parts[limit][0]
             ):
                 limit += 1
+            if i > 0 and cores[i - 1] in ("al", "a") and not parts[i - 1][2]:
+                ordinal = self._ordinal(cores[i:limit])
+                if ordinal:
+                    value, length = ordinal
+                    output.append(f"{lead}{value}{parts[i + length - 1][2]}")
+                    i += length
+                    continue
+            if (
+                cores[i] in ("întâi", "intai")
+                and i + 1 < limit
+                and cores[i + 1] in _MONTHS
+            ):
+                output.append(f"{lead}1{trail}")  # "întâi decembrie" = "1 decembrie"
+                i += 1
+                continue
             parsed = self._parse(cores[i:limit])
             if parsed:
                 value, length = parsed
-                output.append(f"{lead}{value}{parts[i + length - 1][2]}")
+                fraction = self._multiplier_fraction(cores[i:limit], value, length)
+                if fraction:
+                    written, length = fraction
+                    output.append(f"{lead}{written}{parts[i + length - 1][2]}")
+                else:
+                    output.append(f"{lead}{value}{parts[i + length - 1][2]}")
                 i += length
             else:
                 output.append(tokens[i])
                 i += 1
         text = " ".join(self._drop_linking_de(output))
-        return _QUARTERS.sub(_quarter, _HALVES.sub(_half, text))
+        # Currency after the numbers are digits, a symbol after its amount first, as Romanian
+        # writes it: "cinci € 2 kilograme" and "5 € 2 kilograme" are "5 euro 2 kilograme".
+        for before, after, word in self._currency:
+            text = after.sub(rf"\1 {word}", text)
+            text = before.sub(rf"\1 {word}", text)
+        text = _COLLOQUIAL_HALVES.sub(self._colloquial_half, text)
+        text = _HALVES.sub(lambda m: self._fraction(m, "5"), text)
+        return _QUARTERS.sub(lambda m: self._fraction(m, "25"), text)
+
+    def _fraction(self, match: re.Match[str], digits: str) -> str:
+        """``N [noun] și jumătate/un sfert`` as ``N virgula 5/25 [noun]``."""
+        number, noun, de = match.group(1), match.group(2), match.group(3) or ""
+        if number.casefold() in _ARTICLES:
+            if noun is None or noun.casefold() not in _MEASURES:
+                return match.group(0)
+            number = "1"
+        if noun is None and de:
+            return match.group(0)  # "trei și jumătate de pâine"
+        noun_text = f" {_PLURAL_MEASURES.get(_fold(noun), noun)}" if noun else ""
+        return f"{number} {self._decimal} {digits}{noun_text}{de}"
+
+    def _colloquial_half(self, match: re.Match[str]) -> str:
+        number = "1" if match.group(1).casefold() in _ARTICLES else match.group(1)
+        noun = _PLURAL_MEASURES.get(_fold(match.group(2)), match.group(2))
+        return f"{number} {self._decimal} 5 {noun}"
+
+    def _multiplier_fraction(
+        self, words: list[str], value: int, length: int
+    ) -> tuple[str, int] | None:
+        """("N virgula 5 milioane", words used) for ``N milioane și jumătate`` and quarters."""
+        multiplier = words[length - 1]
+        if multiplier not in _PLURAL_MULTIPLIER or value % _LARGE[multiplier]:
+            return None
+        count = value // _LARGE[multiplier]
+        if not 0 < count < 1000:
+            return None
+        conjunction, second, third = [*words[length : length + 3], "", "", ""][:3]
+        if conjunction in ("și-un", "si-un") and second == "sfert":
+            digits, extra = "25", 2
+        elif conjunction in ("și", "si") and second == "un" and third == "sfert":
+            digits, extra = "25", 3
+        elif conjunction in ("și", "si") and second in (
+            "jumătate",
+            "jumatate",
+            "jumate",
+        ):
+            digits, extra = "5", 2
+        else:
+            return None
+        plural = _PLURAL_MULTIPLIER[multiplier]
+        return f"{count} {self._decimal} {digits} {plural}", length + extra
+
+    def _ordinal(self, words: list[str]) -> tuple[str, int] | None:
+        """(digits, words used) for an ordinal after "al"/"a": treilea, opta, douăzecilea."""
+        if words and words[0] in _ORDINALS:
+            return _ORDINALS[words[0]], 1
+        for length in range(1, min(len(words), 5) + 1):
+            for stem in _ordinal_stems(words[length - 1]):
+                parsed = self._parse([*words[: length - 1], stem])
+                if parsed and parsed[1] == length:
+                    return str(parsed[0]), length
+        return None
 
     def parse(self, words: list[str]) -> tuple[int, int] | None:
         """(value, words used) for the number phrase at the start of casefolded ``words``."""
@@ -285,7 +417,7 @@ class RomanianNumberNormalizer:
                 and out[-1].isdigit()
                 and (int(out[-1]) % 100 == 0 or int(out[-1]) % 100 >= 20)
                 and tokens[i + 1][:1].isalpha()
-                and tokens[i + 1].casefold() != "la"  # "de la" = "from"
+                and _fold(_EDGE.match(tokens[i + 1]).group(2)) not in _NOT_LINKING  # type: ignore[union-attr]
             ):
                 continue
             out.append(token)

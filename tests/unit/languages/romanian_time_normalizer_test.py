@@ -31,6 +31,11 @@ def normalizer() -> RomanianTimeNormalizer:
         ("la ora 8.30", "la ora 8:30"),
         # Punctuation after the time is kept
         ("Ne vedem la opt și jumătate.", "Ne vedem la 8:30."),
+        # "este" (the full "e") and "după" are cues too
+        ("este opt și jumătate", "este 8:30"),
+        ("după opt fără un sfert", "după 7:45"),
+        # After "ora" any minutes follow "și", not only round ones
+        ("la ora opt și cincisprezece", "la ora 8:15"),
     ],
 )
 def test_spoken_times_become_clock_times(
@@ -55,6 +60,11 @@ def test_spoken_times_become_clock_times(
         "au crescut la trei și jumătate mii de lei",
         "e trei și jumătate lei",
         "e trei și jumătate %",
+        "a ajuns la zece douăzeci de lei",  # "de" before the unit
+        "de la trei și jumătate la cinci la sută",  # a range of amounts
+        "a ajuns la 8.30 lei",  # a dotted amount
+        "până la 15.03.2024",  # a dotted date
+        "la opt și cincisprezece oameni",  # after "la", only round minutes follow "și"
     ],
 )
 def test_other_phrases_are_left_alone(
